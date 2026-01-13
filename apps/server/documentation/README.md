@@ -1,5 +1,23 @@
 # Documentação da API Mini-Kanban
 
+## 📋 Índice
+
+- [Visão Geral](#visão-geral)
+- [Arquitetura](#arquitetura)
+- [Estrutura do Projeto](#estrutura-do-projeto)
+- [Modelo de Dados](#modelo-de-dados)
+- [Fluxo de Requisição](#fluxo-de-requisição)
+- [Casos de Uso](#casos-de-uso)
+- [Tecnologias Utilizadas](#tecnologias-utilizadas)
+- [Diagrama de Componentes](#diagrama-de-componentes)
+- [Validação e Tratamento de Erros](#validação-e-tratamento-de-erros)
+- [Testes](#testes)
+- [Logging](#logging)
+- [Documentação da API](#documentação-da-api)
+- [Configuração](#configuração)
+- [Deploy](#deploy)
+- [Referências](#referências)
+
 ## Visão Geral
 
 A **Mini-Kanban API** é uma API RESTful para gerenciamento de tarefas no estilo Kanban, construída com Node.js, Express, TypeScript e PostgreSQL. A aplicação segue os princípios de **Domain-Driven Design (DDD)** e **SOLID**, garantindo código limpo, testável e manutenível.
