@@ -1,0 +1,43 @@
+# Dependencies
+node_modules
+apps/*/node_modules
+packages/*/node_modules
+
+# Build outputs
+dist
+apps/*/dist
+packages/*/dist
+
+# Development files
+.git
+.gitignore
+*.md
+.env.local
+.env.*.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Turbo
+.turbo
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Test files
+coverage
+*.test.*
+*.spec.*
+__tests__
+
+# Logs
+*.log
+npm-debug.log*
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore

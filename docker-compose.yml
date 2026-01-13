@@ -1,0 +1,64 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: kanban-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: kanban
+      POSTGRES_PASSWORD: kanban123
+      POSTGRES_DB: kanban_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kanban -d kanban_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kanban-network
+
+  server:
+    build:
+      context: ./apps/server
+      dockerfile: Dockerfile
+    container_name: kanban-server
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://kanban:kanban123@postgres:5432/kanban_db?schema=public
+      DATABASE_POOL_MIN: 2
+      DATABASE_POOL_MAX: 10
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - kanban-network
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=http://localhost:3000
+    container_name: kanban-web
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+    depends_on:
+      - server
+    networks:
+      - kanban-network
+
+volumes:
+  postgres_data:
+
+networks:
+  kanban-network:
+    driver: bridge

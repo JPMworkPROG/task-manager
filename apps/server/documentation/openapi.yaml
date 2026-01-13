@@ -1,0 +1,537 @@
+openapi: 3.1.0
+info:
+  title: Mini-Kanban API
+  description: |
+    API RESTful para gerenciamento de tarefas no estilo Kanban.
+    
+    ## Entidades Principais
+    
+    - **Board (Quadro)**: Contêiner de alto nível para um projeto
+    - **Column (Coluna)**: Representa uma etapa do fluxo de trabalho
+    - **Card (Cartão)**: Representa a tarefa em si
+    
+    ## Regras de Negócio
+    
+    - Um cartão deve sempre pertencer a uma coluna
+    - A ordem das colunas dentro de um quadro é importante
+    - O agregado principal é o Quadro, que controla o ciclo de vida de suas Colunas e Cartões
+  version: 1.0.0
+  contact:
+    name: Task Manager Team
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000
+    description: Servidor de desenvolvimento
+
+tags:
+  - name: Boards
+    description: Operações relacionadas aos quadros Kanban
+  - name: Columns
+    description: Operações relacionadas às colunas
+  - name: Cards
+    description: Operações relacionadas aos cartões/tarefas
+
+paths:
+  /boards:
+    get:
+      tags:
+        - Boards
+      summary: Listar todos os quadros
+      description: Retorna uma lista de todos os quadros disponíveis
+      operationId: getBoards
+      responses:
+        '200':
+          description: Lista de quadros retornada com sucesso
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Board'
+              example:
+                - id: "550e8400-e29b-41d4-a716-446655440000"
+                  name: "Project Alpha"
+                - id: "550e8400-e29b-41d4-a716-446655440001"
+                  name: "Week Tasks"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - Boards
+      summary: Criar um novo quadro
+      description: Cria um novo quadro Kanban
+      operationId: createBoard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBoardRequest'
+            example:
+              name: "My New Project"
+      responses:
+        '201':
+          description: Quadro criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Board'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /boards/{boardId}:
+    get:
+      tags:
+        - Boards
+      summary: Obter um quadro específico
+      description: |
+        Retorna um quadro específico com todas as suas colunas e cartões aninhados.
+        Este endpoint é essencial para o frontend carregar a visualização completa do Kanban.
+      operationId: getBoard
+      parameters:
+        - $ref: '#/components/parameters/BoardId'
+      responses:
+        '200':
+          description: Quadro retornado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoardWithDetails'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440000"
+                name: "Project Alpha"
+                columns:
+                  - id: "col-001"
+                    name: "To Do"
+                    board_id: "550e8400-e29b-41d4-a716-446655440000"
+                    cards:
+                      - id: "card-001"
+                        title: "Implement API"
+                        description: "Create RESTful endpoints"
+                        column_id: "col-001"
+                  - id: "col-002"
+                    name: "In Progress"
+                    board_id: "550e8400-e29b-41d4-a716-446655440000"
+                    cards: []
+                  - id: "col-003"
+                    name: "Done"
+                    board_id: "550e8400-e29b-41d4-a716-446655440000"
+                    cards: []
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /boards/{boardId}/columns:
+    post:
+      tags:
+        - Columns
+      summary: Criar uma nova coluna
+      description: Cria uma nova coluna dentro de um quadro específico
+      operationId: createColumn
+      parameters:
+        - $ref: '#/components/parameters/BoardId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateColumnRequest'
+            example:
+              name: "In Review"
+      responses:
+        '201':
+          description: Coluna criada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Column'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /columns/{columnId}/cards:
+    post:
+      tags:
+        - Cards
+      summary: Criar um novo cartão
+      description: Cria um novo cartão dentro de uma coluna específica
+      operationId: createCard
+      parameters:
+        - $ref: '#/components/parameters/ColumnId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCardRequest'
+            example:
+              title: "Develop API"
+              description: "Create all RESTful endpoints for the Kanban board"
+      responses:
+        '201':
+          description: Cartão criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Card'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /cards/{cardId}:
+    put:
+      tags:
+        - Cards
+      summary: Atualizar um cartão
+      description: Atualiza o título e/ou descrição de um cartão existente
+      operationId: updateCard
+      parameters:
+        - $ref: '#/components/parameters/CardId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCardRequest'
+            example:
+              title: "Develop API - Updated"
+              description: "Create all RESTful endpoints with validation"
+      responses:
+        '200':
+          description: Cartão atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Card'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+        - Cards
+      summary: Excluir um cartão
+      description: Remove permanentemente um cartão do sistema
+      operationId: deleteCard
+      parameters:
+        - $ref: '#/components/parameters/CardId'
+      responses:
+        '204':
+          description: Cartão excluído com sucesso
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /cards/{cardId}/move:
+    patch:
+      tags:
+        - Cards
+      summary: Mover um cartão para outra coluna
+      description: |
+        Move um cartão para uma nova coluna. 
+        Este é o endpoint de ação de domínio principal que contém a lógica de negócio para validar a movimentação.
+      operationId: moveCard
+      parameters:
+        - $ref: '#/components/parameters/CardId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveCardRequest'
+            example:
+              newColumnId: "col-002"
+      responses:
+        '200':
+          description: Cartão movido com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Card'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    Board:
+      type: object
+      description: Quadro Kanban - contêiner de alto nível para um projeto
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Identificador único do quadro
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Nome do quadro
+          example: "Project Alpha"
+
+    BoardWithDetails:
+      type: object
+      description: Quadro com todas as colunas e cartões aninhados
+      required:
+        - id
+        - name
+        - columns
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Identificador único do quadro
+        name:
+          type: string
+          description: Nome do quadro
+        columns:
+          type: array
+          description: Lista de colunas do quadro
+          items:
+            $ref: '#/components/schemas/ColumnWithCards'
+
+    Column:
+      type: object
+      description: Coluna - representa uma etapa do fluxo de trabalho
+      required:
+        - id
+        - name
+        - board_id
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Identificador único da coluna
+          example: "col-001"
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Nome da coluna
+          example: "To Do"
+        board_id:
+          type: string
+          format: uuid
+          description: ID do quadro ao qual a coluna pertence
+
+    ColumnWithCards:
+      type: object
+      description: Coluna com seus cartões
+      required:
+        - id
+        - name
+        - board_id
+        - cards
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        board_id:
+          type: string
+          format: uuid
+        cards:
+          type: array
+          items:
+            $ref: '#/components/schemas/Card'
+
+    Card:
+      type: object
+      description: Cartão - representa uma tarefa
+      required:
+        - id
+        - title
+        - column_id
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Identificador único do cartão
+          example: "card-001"
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Título do cartão
+          example: "Implement API"
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
+          description: Descrição detalhada do cartão (opcional)
+          example: "Create all RESTful endpoints for the Kanban board"
+        column_id:
+          type: string
+          format: uuid
+          description: ID da coluna à qual o cartão pertence
+
+    CreateBoardRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Nome do novo quadro
+          example: "My New Project"
+
+    CreateColumnRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Nome da nova coluna
+          example: "In Review"
+
+    CreateCardRequest:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Título do novo cartão
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
+          description: Descrição do cartão (opcional)
+
+    UpdateCardRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Novo título do cartão
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
+          description: Nova descrição do cartão
+
+    MoveCardRequest:
+      type: object
+      required:
+        - newColumnId
+      properties:
+        newColumnId:
+          type: string
+          format: uuid
+          description: ID da coluna de destino
+          example: "col-002"
+
+    Error:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: Mensagem de erro
+        code:
+          type: string
+          description: Código de erro para identificação programática
+        details:
+          type: object
+          additionalProperties: true
+          description: Detalhes adicionais do erro
+
+  parameters:
+    BoardId:
+      name: boardId
+      in: path
+      required: true
+      description: Identificador único do quadro
+      schema:
+        type: string
+        format: uuid
+      example: "550e8400-e29b-41d4-a716-446655440000"
+
+    ColumnId:
+      name: columnId
+      in: path
+      required: true
+      description: Identificador único da coluna
+      schema:
+        type: string
+        format: uuid
+      example: "col-001"
+
+    CardId:
+      name: cardId
+      in: path
+      required: true
+      description: Identificador único do cartão
+      schema:
+        type: string
+        format: uuid
+      example: "card-001"
+
+  responses:
+    BadRequest:
+      description: Requisição inválida - dados malformados ou validação falhou
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            message: "Validation failed"
+            code: "VALIDATION_ERROR"
+            details:
+              field: "name"
+              error: "Name is required"
+
+    NotFound:
+      description: Recurso não encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            message: "Resource not found"
+            code: "NOT_FOUND"
+
+    InternalServerError:
+      description: Erro interno do servidor
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            message: "Internal server error"
+            code: "INTERNAL_ERROR"
