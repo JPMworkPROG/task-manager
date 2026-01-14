@@ -118,10 +118,10 @@ export function Card({
         style={dragStyle}
         onClick={handleCardClick}
         className={cn(
-          'cursor-pointer hover:shadow-md transition-opacity',
+          'cursor-pointer hover:shadow-md transition-opacity select-none',
           isDragging && 'opacity-0',
           isMoving && 'opacity-60 pointer-events-none',
-          transform && 'z-50'
+          transform && 'z-50 touch-none'
         )}
       >
         <CardHeader className="p-3 pb-1">
